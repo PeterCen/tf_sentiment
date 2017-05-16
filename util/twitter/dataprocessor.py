@@ -16,11 +16,15 @@ def run(max_seq_length, max_vocab_size):
         os.makedirs("data/")
     if not os.path.exists("data/twitter/"):
         os.makedirs("data/twitter/")
+    if not os.path.exists("data/twitter/csv"):
+        os.makedirs("data/twitter/csv")
     if not os.path.exists("data/twitter/checkpoints/"):
         os.makedirs("data/twitter/checkpoints")
     if not os.path.exists(path):
         print "Data not found, please add to data/twitter/dataset.csv"
         return
+    else:
+        csvsplit(open(path), row_limit=100000, output_path="data/twitter/csv")
     if os.path.exists("data/twitter/vocab.txt"):
         print "vocab mapping found..."
     else:
@@ -29,28 +33,45 @@ def run(max_seq_length, max_vocab_size):
     if not os.path.exists("data/twitter/processed"):
         os.makedirs("data/twitter/processed/")
         print "No processed data file found, running preprocessor..."
-    if not os.path.exists("data/twitter/processed/data.npy"):
+    if not os.path.exists("data/twitter/processed/data0.npy"):
         print "Procesing data..."
-        createProcessedDataFile(path, max_seq_length)
+        import vocabmapping
+        vocab = vocabmapping.VocabMapping()
+        dirCount = 0
+        processes = []
+        lock = Lock()
+        csv_paths = "data/twitter/csv/"
+        dirs = [f for f in os.listdir(csv_paths) if (os.path.isfile(os.path.join(csv_paths, f)) and f.endswith('.csv'))]
+        for d in dirs:
+            d = os.path.join(csv_paths, d)
+            print "Procesing data with process: " + str(dirCount)
+            p = Process(target=createProcessedDataFile, args=(vocab, d, dirCount, max_seq_length, lock))
+            p.start()
+            processes.append(p)
+            dirCount += 1
+        for p in processes:
+            if p.is_alive():
+                p.join()
 
 '''
 To speed up the data processing (I probably did it way too inefficiently),
 I decided to split the task in n processes, where n is the number of directories
 A lock was used to ensure while writing to std.out bad things don't happen.
 '''
-def createProcessedDataFile(path, max_seq_length):
-    vocab = vocabmapping.VocabMapping()
+def createProcessedDataFile(vocab, f, pid, max_seq_length, lock):
     count = 0
     data = np.array([i for i in range(max_seq_length + 2)])
-    with open(path, 'rb') as csvfile:
+    with open(f, 'rb') as csvfile:
         csvreader = csv.reader(csvfile, delimiter=',')
-        print "Grabbing sequence lengths from: {0}".format(path)
+        print "Grabbing sequence lengths from: {0}".format(f)
         for row in csvreader:
             count += 1
             if count == 1:
                 continue
             if count % 100 == 0:
-                print "Processing: " + path + " the " + str(count) + "th line..."
+                lock.acquire()
+                print "Processing: " + f + " the " + str(count) + "th file... on process: " + str(pid)
+                lock.release()
             tokens = tokenize(row[3].lower())
             numTokens = len(tokens)
             indices = [vocab.getIndex(j) for j in tokens]
@@ -69,9 +90,52 @@ def createProcessedDataFile(path, max_seq_length):
             indices = []
     #remove first placeholder value
     data = data[1::]
-    print "Saving data file to disk..."
-    saveData(data)
+    lock.acquire()
+    print "Saving data file{0} to disk...".format(str(pid))
+    lock.release()
+    saveData(data, pid)
 
+def csvsplit(filehandler, delimiter=',', row_limit=10000, 
+    output_name_template='output_%s.csv', output_path='.', keep_headers=True):
+    """
+    Splits a CSV file into multiple pieces.
+    
+    A quick bastardization of the Python CSV library.
+    Arguments:
+        `row_limit`: The number of rows you want in each output file. 10,000 by default.
+        `output_name_template`: A %s-style template for the numbered output files.
+        `output_path`: Where to stick the output files.
+        `keep_headers`: Whether or not to print the headers in each output file.
+    Example usage:
+    
+        >> from toolbox import csv_splitter;
+        >> csv_splitter.split(open('/home/ben/input.csv', 'r'));
+    
+    """
+    import csv
+    reader = csv.reader(filehandler, delimiter=delimiter)
+    current_piece = 1
+    current_out_path = os.path.join(
+         output_path,
+         output_name_template  % current_piece
+    )
+    current_out_writer = csv.writer(open(current_out_path, 'w'), delimiter=delimiter)
+    current_limit = row_limit
+    if keep_headers:
+        headers = reader.next()
+        current_out_writer.writerow(headers)
+    for i, row in enumerate(reader):
+        if i + 1 > current_limit:
+            current_piece += 1
+            current_limit = row_limit * current_piece
+            current_out_path = os.path.join(
+               output_path,
+               output_name_template  % current_piece
+            )
+            current_out_writer = csv.writer(open(current_out_path, 'w'), delimiter=delimiter)
+            if keep_headers:
+                current_out_writer.writerow(headers)
+        current_out_writer.writerow(row)
 '''
 This function tokenizes sentences
 '''
@@ -94,8 +158,8 @@ def findBetween( s, first, last ):
 '''
 Saves processed data numpy array
 '''
-def saveData(npArray):
-    name = "data.npy"
+def saveData(npArray, index):
+    name = "data{0}.npy".format(str(index))
     outfile = os.path.join("data/twitter/processed/", name)
     print "numpy array is: {0}x{1}".format(len(npArray), len(npArray[0]))
     np.save(outfile, npArray)
