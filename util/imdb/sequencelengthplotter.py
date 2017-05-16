@@ -12,7 +12,7 @@ import sys
 import numpy as np
 import os
 
-dirs = ["data/aclImdb/test/pos", "data/aclImdb/test/neg", "data/aclImdb/train/pos", "data/aclImdb/train/neg"]
+dirs = ["data/imdb/aclImdb/test/pos", "data/imdb/aclImdb/test/neg", "data/imdb/aclImdb/train/pos", "data/imdb/aclImdb/train/neg"]
 num_bins = 50
 string_args = [("num_bins", "int")]
 

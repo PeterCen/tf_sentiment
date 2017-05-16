@@ -10,30 +10,42 @@ Written by: Dominik Kaukinen
 import tensorflow as tf
 from tensorflow import gfile
 import numpy as np
+import csv
 import sys
 import os
 import nltk
+import string
 from six.moves import xrange
-import util.dataprocessor
+import util.imdb.dataprocessor as dataprocessor
 import models.sentiment
-import util.vocabmapping
+import util.imdb.vocabmapping as vocabmapping
 import ConfigParser
 import pickle
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_string('checkpoint_dir', 'data/checkpoints/', 'Directory to store/restore checkpoints')
+flags.DEFINE_string('checkpoint_dir', 'data/imdb/checkpoints/', 'Directory to store/restore checkpoints')
 flags.DEFINE_string('text', 'Hello World!', 'Text to sample with.')
-flags.DEFINE_string('config_file', 'config.ini', 'Path to configuration file.')
+flags.DEFINE_string('csv', '', 'CSV to sample with.')
+flags.DEFINE_string('config_file', 'configs/imdb.ini', 'Path to configuration file.')
 
 def main():
-	vocab_mapping = util.vocabmapping.VocabMapping()
+	vocab_mapping = vocabmapping.VocabMapping()
 	with tf.Session() as sess:
 		model = load_model(sess, vocab_mapping.getSize())
 		if model == None:
 			return
 		max_seq_length = model.max_seq_length
 		test_data  = [FLAGS.text.lower()]
+		output_data = []
+		if len(FLAGS.csv) > 0:
+			with open(FLAGS.csv, 'rb') as csvfile:
+			    csvreader = csv.reader(csvfile, dialect='excel')
+			    for row in csvreader:
+			    	text = row[0]
+			    	printable = set(string.printable)
+			    	text = filter(lambda x: x in printable, text)
+			    	test_data.append(text)
 		for text in test_data:
 			data, seq_lengths, targets = prepare_text(text, max_seq_length, vocab_mapping)
 			input_feed = {}
@@ -48,6 +60,13 @@ def main():
 			score = np.argmax(outputs[0])
 			probability = outputs[0].max(axis=1)[0]
 			print "Value of sentiment: {0} with probability: {1}".format(score , probability)
+			output_row = [text, score, probability]
+			output_row.extend(tokenize(text))
+			output_data.append(output_row)
+		with open('output.csv', 'wb') as csvfile:
+			csvwriter = csv.writer(csvfile, dialect='excel')
+			for row in output_data:
+				csvwriter.writerow(row)
 
 def prepare_text(text, max_seq_length, vocab_mapping):
 	'''

@@ -17,22 +17,22 @@ import ConfigParser
 import random
 import time
 from six.moves import xrange
-import util.dataprocessor
+import util.imdb.dataprocessor as dataprocessor
 import util.hyperparams as hyperparams
 import models.sentiment
-import util.vocabmapping
+import util.imdb.vocabmapping as vocabmapping
 
 #Defaults for network parameters
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_string("config_file", "config.ini", "Path to configuration file with hyper-parameters.")
-flags.DEFINE_string("data_dir", "data/", "Path to main data directory.")
-flags.DEFINE_string("checkpoint_dir", "data/checkpoints/", "Directory to store/restore checkpoints")
+flags.DEFINE_string("config_file", "configs/imdb.ini", "Path to configuration file with hyper-parameters.")
+flags.DEFINE_string("data_dir", "data/imdb", "Path to main data directory.")
+flags.DEFINE_string("checkpoint_dir", "data/imdb/checkpoints/", "Directory to store/restore checkpoints")
 
 def main():
 	hyper_params = check_get_hyper_param_dic()
-	util.dataprocessor.run(hyper_params["max_seq_length"],
+	dataprocessor.run(hyper_params["max_seq_length"],
 		hyper_params["max_vocab_size"])
 
 	#create model
@@ -40,7 +40,7 @@ def main():
 	print "Number of hidden layers: {0}".format(hyper_params["num_layers"])
 	print "Number of units per layer: {0}".format(hyper_params["hidden_size"])
 	print "Dropout: {0}".format(hyper_params["dropout"])
-	vocabmapping = util.vocabmapping.VocabMapping()
+	vocabmapping = vocabmapping.VocabMapping()
 	vocab_size = vocabmapping.getSize()
 	print "Vocab size is: {0}".format(vocab_size)
 	path = os.path.join(FLAGS.data_dir, "processed/")
