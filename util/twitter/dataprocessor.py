@@ -7,6 +7,7 @@ import urllib2
 import csv
 import numpy as np
 from multiprocessing import Process, Lock
+import vocabmapping
 
 path = "data/twitter/dataset.csv"
 
@@ -28,19 +29,17 @@ def run(max_seq_length, max_vocab_size):
     if not os.path.exists("data/twitter/processed"):
         os.makedirs("data/twitter/processed/")
         print "No processed data file found, running preprocessor..."
-    else:
-        return
-    import vocabmapping
-    vocab = vocabmapping.VocabMapping()
-    print "Procesing data..."
-    createProcessedDataFile(vocab, d, max_seq_length)
+    if not os.path.exists("data/twitter/processed/data.npy"):
+        print "Procesing data..."
+        createProcessedDataFile(path, max_seq_length)
 
 '''
 To speed up the data processing (I probably did it way too inefficiently),
 I decided to split the task in n processes, where n is the number of directories
 A lock was used to ensure while writing to std.out bad things don't happen.
 '''
-def createProcessedDataFile(vocab_mapping, directory, max_seq_length):
+def createProcessedDataFile(path, max_seq_length):
+    vocab = vocabmapping.VocabMapping()
     count = 0
     data = np.array([i for i in range(max_seq_length + 2)])
     with open(path, 'rb') as csvfile:
@@ -51,13 +50,13 @@ def createProcessedDataFile(vocab_mapping, directory, max_seq_length):
             if count == 1:
                 continue
             if count % 100 == 0:
-                print "Processing: " + f + " the " + str(count) + "th line..."
+                print "Processing: " + path + " the " + str(count) + "th line..."
             tokens = tokenize(row[3].lower())
             numTokens = len(tokens)
-            indices = [vocab_mapping.getIndex(j) for j in tokens]
+            indices = [vocab.getIndex(j) for j in tokens]
             #pad sequence to max length
             if len(indices) < max_seq_length:
-                indices = indices + [vocab_mapping.getIndex("<PAD>") for i in range(max_seq_length - len(indices))]
+                indices = indices + [vocab.getIndex("<PAD>") for i in range(max_seq_length - len(indices))]
             else:
                 indices = indices[0:max_seq_length]
             if row[1] == 1:

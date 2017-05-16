@@ -20,7 +20,7 @@ from six.moves import xrange
 import util.twitter.dataprocessor as dataprocessor
 import util.hyperparams as hyperparams
 import models.sentiment
-import util.twitter.vocabmapping as vocabmapping
+import util.twitter.vocabmapping as vocabmap
 
 #Defaults for network parameters
 
@@ -40,8 +40,8 @@ def main():
 	print "Number of hidden layers: {0}".format(hyper_params["num_layers"])
 	print "Number of units per layer: {0}".format(hyper_params["hidden_size"])
 	print "Dropout: {0}".format(hyper_params["dropout"])
-	vocabmapping = vocabmapping.VocabMapping()
-	vocab_size = vocabmapping.getSize()
+	vocab_mapping = vocabmap.VocabMapping()
+	vocab_size = vocab_mapping.getSize()
 	print "Vocab size is: {0}".format(vocab_size)
 	path = os.path.join(FLAGS.data_dir, "processed/")
 	infile = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]

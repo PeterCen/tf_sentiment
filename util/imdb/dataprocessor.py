@@ -33,8 +33,6 @@ def run(max_seq_length, max_vocab_size):
     if not os.path.exists("data/imdb/processed"):
         os.makedirs("data/imdb/processed/")
         print "No processed data file found, running preprocessor..."
-    else:
-        return
     import vocabmapping
     vocab = vocabmapping.VocabMapping()
     dirCount = 0
