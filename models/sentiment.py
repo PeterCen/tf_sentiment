@@ -1,6 +1,8 @@
 
 import tensorflow as tf
-from tensorflow.python.ops import rnn, rnn_cell, seq2seq
+from tensorflow.contrib import rnn
+from tensorflow.contrib import seq2seq
+from tensorflow.contrib.rnn import core_rnn_cell as rnn_cell
 import numpy as np
 
 class SentimentModel(object):
@@ -62,18 +64,23 @@ class SentimentModel(object):
 			embedded_tokens_drop = tf.nn.dropout(embedded_tokens, self.dropout_keep_prob_embedding)
 
 		rnn_input = [embedded_tokens_drop[:, i, :] for i in range(self.max_seq_length)]
-		with tf.variable_scope("lstm") as scope:
-			single_cell = rnn_cell.DropoutWrapper(
-				rnn_cell.LSTMCell(hidden_size,
+
+		def lstm_cell():
+			single_cell = rnn_cell.LSTMCell(hidden_size,
 								  initializer=tf.random_uniform_initializer(-1.0, 1.0),
-								  state_is_tuple=True),
-								  input_keep_prob=self.dropout_keep_prob_lstm_input,
-								  output_keep_prob=self.dropout_keep_prob_lstm_output)
-			cell = rnn_cell.MultiRNNCell([single_cell] * num_layers, state_is_tuple=True)
+								  state_is_tuple=True,
+								  reuse=tf.get_variable_scope().reuse)
+			single_cell = rnn_cell.DropoutWrapper(single_cell,
+							input_keep_prob=self.dropout_keep_prob_lstm_input,
+							output_keep_prob=self.dropout_keep_prob_lstm_output)
+			return single_cell
+
+		with tf.variable_scope("lstm") as scope:
+			cell = rnn_cell.MultiRNNCell([lstm_cell() for _ in range(num_layers)], state_is_tuple=True)
 
 			initial_state = cell.zero_state(self.batch_size, tf.float32)
 
-			rnn_output, rnn_state = rnn.rnn(cell, rnn_input,
+			rnn_output, rnn_state = rnn.static_rnn(cell, rnn_input,
 											initial_state=initial_state,
 											sequence_length=self.seq_lengths)
 
@@ -92,7 +99,7 @@ class SentimentModel(object):
 			self.predictions = tf.argmax(self.scores, 1)
 
 		with tf.variable_scope("loss"):
-			self.losses = tf.nn.softmax_cross_entropy_with_logits(self.scores, self.target, name="ce_losses")
+			self.losses = tf.nn.softmax_cross_entropy_with_logits(logits=self.scores, labels=self.target, name="ce_losses")
 			self.total_loss = tf.reduce_sum(self.losses)
 			self.mean_loss = tf.reduce_mean(self.losses)
 
@@ -107,11 +114,11 @@ class SentimentModel(object):
 			gradients = tf.gradients(self.losses, params)
 			clipped_gradients, norm = tf.clip_by_global_norm(gradients, self.max_gradient_norm)
 			with tf.name_scope("grad_norms") as scope:
-				grad_summ = tf.scalar_summary("grad_norms", norm)
+				grad_summ = tf.summary.scalar("grad_norms", norm)
 			self.update = opt.apply_gradients(zip(clipped_gradients, params), global_step=self.global_step)
-			loss_summ = tf.scalar_summary("{0}_loss".format(self.str_summary_type), self.mean_loss)
-			acc_summ = tf.scalar_summary("{0}_accuracy".format(self.str_summary_type), self.accuracy)
-			self.merged = tf.merge_summary([loss_summ, acc_summ])
+			loss_summ = tf.summary.scalar("{0}_loss".format(self.str_summary_type), self.mean_loss)
+			acc_summ = tf.summary.scalar("{0}_accuracy".format(self.str_summary_type), self.accuracy)
+			self.merged = tf.summary.merge([loss_summ, acc_summ])
 		self.saver = tf.train.Saver(tf.all_variables())
 
 	def getBatch(self, test_data=False):

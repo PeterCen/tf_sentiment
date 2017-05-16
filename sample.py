@@ -8,7 +8,7 @@ http://deeplearning.net/tutorial/lstm.html
 Written by: Dominik Kaukinen
 '''
 import tensorflow as tf
-from tensorflow.python.platform import gfile
+from tensorflow import gfile
 import numpy as np
 import sys
 import os
@@ -111,7 +111,7 @@ def load_model(session, vocab_size):
 											batch_size = 1,
 											forward_only=True)
 	ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
-	if ckpt and gfile.Exists(ckpt.model_checkpoint_path):
+	if ckpt and gfile.Exists(ckpt.model_checkpoint_path+".index"):
 		print "Reading model parameters from {0}".format(ckpt.model_checkpoint_path)
 		model.saver.restore(session, ckpt.model_checkpoint_path)
 	else:
