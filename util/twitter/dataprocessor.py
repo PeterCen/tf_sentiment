@@ -80,7 +80,7 @@ def createProcessedDataFile(vocab, f, pid, max_seq_length, lock):
                 indices = indices + [vocab.getIndex("<PAD>") for i in range(max_seq_length - len(indices))]
             else:
                 indices = indices[0:max_seq_length]
-            if row[1] == 1:
+            if row[1] is "1":
                 indices.append(1)
             else:
                 indices.append(0)
