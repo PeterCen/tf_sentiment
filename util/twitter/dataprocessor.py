@@ -24,7 +24,7 @@ def run(max_seq_length, max_vocab_size):
         print "Data not found, please add to data/twitter/dataset.csv"
         return
     else:
-        csvsplit(open(path), row_limit=100000, output_path="data/twitter/csv")
+        csvsplit(open(path), row_limit=30000, output_path="data/twitter/csv")
     if os.path.exists("data/twitter/vocab.txt"):
         print "vocab mapping found..."
     else:
