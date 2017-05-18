@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 I used mainly the tensorflow translation example:
 https://github.com/tensorflow/tensorflow/
@@ -48,7 +49,7 @@ def main():
 	#randomize data order
 	print infile
 	data = np.load(os.path.join(path, infile[0]))
-	for i in range(1, len(infile)):
+	for i in range(1, min(5,len(infile))):
 		data = np.vstack((data, np.load(os.path.join(path, infile[i]))))
 	np.random.shuffle(data)
 	#data = data[:3000]
