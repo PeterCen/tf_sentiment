@@ -49,7 +49,7 @@ def main():
 	#randomize data order
 	print infile
 	data = np.load(os.path.join(path, infile[0]))
-	for i in range(1, min(5,len(infile))):
+	for i in range(15, min(25,len(infile))):
 		data = np.vstack((data, np.load(os.path.join(path, infile[i]))))
 	np.random.shuffle(data)
 	#data = data[:3000]
