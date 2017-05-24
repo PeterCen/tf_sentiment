@@ -16,18 +16,18 @@ import os
 import nltk
 import string
 from six.moves import xrange
-import util.oohlala.dataprocessor as dataprocessor
+import util.twitter.dataprocessor as dataprocessor
 import models.sentiment
-import util.oohlala.vocabmapping as vocabmapping
+import util.twitter.vocabmapping as vocabmapping
 import ConfigParser
 import pickle
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_string('checkpoint_dir', 'data/oohlala/checkpoints/', 'Directory to store/restore checkpoints')
+flags.DEFINE_string('checkpoint_dir', 'data/twitter/checkpoints/', 'Directory to store/restore checkpoints')
 flags.DEFINE_string('text', 'Hello World!', 'Text to sample with.')
 flags.DEFINE_string('csv', '', 'CSV to sample with.')
-flags.DEFINE_string('config_file', 'configs/oohlala.ini', 'Path to configuration file.')
+flags.DEFINE_string('config_file', 'configs/twitter.ini', 'Path to configuration file.')
 
 def main():
 	vocab_mapping = vocabmapping.VocabMapping()
