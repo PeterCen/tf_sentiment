@@ -95,7 +95,7 @@ def prepare_text(text, max_seq_length, vocab_mapping):
 	data = np.vstack((data, indices))
 	targets.append(1)
 
-	onehot = np.zeros((len(targets), 2))
+	onehot = np.zeros((len(targets), 3))
 	onehot[np.arange(len(targets)), targets] = 1
 	return data[1::], np.array(seq_lengths), onehot
 
