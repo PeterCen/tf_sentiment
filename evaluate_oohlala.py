@@ -129,7 +129,7 @@ def load_model(session, vocab_size):
 											learning_rate = hyper_params["learning_rate"],
 											lr_decay = hyper_params["lr_decay_factor"],
 											batch_size = 1,
-											num_classes = 2,
+											num_classes = 3,
 											forward_only=True)
 	ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
 	if ckpt and gfile.Exists(ckpt.model_checkpoint_path+".index"):
