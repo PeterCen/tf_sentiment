@@ -58,6 +58,7 @@ def main():
 			output_feed = [model.y]
 			print output_feed
 			outputs = sess.run(output_feed, input_feed)
+			print outputs
 			score = np.argmax(outputs[0])
 			score1 = np.argmax(outputs[1])
 			score2 = np.argmax(outputs[2])
