@@ -18,18 +18,18 @@ import ConfigParser
 import random
 import time
 from six.moves import xrange
-import util.twitter.dataprocessor as dataprocessor
+import util.oohlala.dataprocessor as dataprocessor
 import util.hyperparams as hyperparams
 import models.sentiment
-import util.twitter.vocabmapping as vocabmap
+import util.oohlala.vocabmapping as vocabmap
 
 #Defaults for network parameters
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_string("config_file", "configs/twitter.ini", "Path to configuration file with hyper-parameters.")
-flags.DEFINE_string("data_dir", "data/twitter/", "Path to main data directory.")
-flags.DEFINE_string("checkpoint_dir", "data/twitter/checkpoints/", "Directory to store/restore checkpoints")
+flags.DEFINE_string("config_file", "configs/oohlala.ini", "Path to configuration file with hyper-parameters.")
+flags.DEFINE_string("data_dir", "data/oohlala/", "Path to main data directory.")
+flags.DEFINE_string("checkpoint_dir", "data/oohlala/checkpoints/", "Directory to store/restore checkpoints")
 
 def main():
 	hyper_params = check_get_hyper_param_dic()
@@ -49,7 +49,7 @@ def main():
 	#randomize data order
 	print infile
 	data = np.load(os.path.join(path, infile[0]))
-	for i in range(1, min(3,len(infile))):
+	for i in range(0, len(infile)):
 		data = np.vstack((data, np.load(os.path.join(path, infile[i]))))
 	np.random.shuffle(data)
 	#data = data[:3000]
@@ -122,7 +122,6 @@ def create_model(session, hyper_params, vocab_size):
 											max_seq_length = hyper_params["max_seq_length"],
 											learning_rate = hyper_params["learning_rate"],
 											lr_decay = hyper_params["lr_decay_factor"],
-											num_classes = 2,
 											batch_size = hyper_params["batch_size"])
 	ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
 	if ckpt and gfile.Exists(ckpt.model_checkpoint_path):

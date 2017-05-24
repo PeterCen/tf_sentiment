@@ -20,8 +20,8 @@ class SentimentModel(object):
 	'''
 	def __init__(self, vocab_size, hidden_size, dropout,
 	num_layers, max_gradient_norm, max_seq_length,
-	learning_rate, lr_decay,batch_size, forward_only=False):
-		self.num_classes =2
+	learning_rate, lr_decay,batch_size, num_classes = 3, forward_only=False):
+		self.num_classes = num_classes
 		self.dropout = dropout
 		self.vocab_size = vocab_size
 		self.learning_rate = tf.Variable(float(learning_rate), trainable=False)
@@ -162,11 +162,12 @@ class SentimentModel(object):
 		self.train_batch_pointer = 0
 		self.test_batch_pointer = 0
 		#cutoff non even number of batches
-		targets = (data.transpose()[-2]).transpose()
-		onehot = np.zeros((len(targets), 2))
-		onehot[np.arange(len(targets)), targets] = 1
+		#targets = (data.transpose()[-4:-2]).transpose()
+		#onehot = np.zeros((len(targets), 3))
+		#onehot[np.arange(len(targets)), targets] = 1
+		onehot = (data.transpose()[-1-self.num_classes:-1]).transpose()
 		sequence_lengths = (data.transpose()[-1]).transpose()
-		data = (data.transpose()[0:-2]).transpose()
+		data = (data.transpose()[0:-1-self.num_classes]).transpose()
 
 		self.train_data = data[train_start_end_index[0]: train_start_end_index[1]]
 		self.test_data = data[test_start_end_index[0]:test_start_end_index[1]]
@@ -183,12 +184,14 @@ class SentimentModel(object):
 		self.train_sequence_lengths = np.split(self.train_sequence_lengths, num_train_batches)
 		self.train_targets = onehot[train_start_end_index[0]:train_start_end_index[1]][:train_cutoff]
 		self.train_targets = np.split(self.train_targets, num_train_batches)
+		print self.train_targets
 		self.train_data = np.split(self.train_data, num_train_batches)
 
 		print "Test size is: {0}, splitting into {1} batches".format(len(self.test_data), num_test_batches)
 		self.test_data = np.split(self.test_data, num_test_batches)
 		self.test_targets = onehot[test_start_end_index[0]:test_start_end_index[1]][:test_cutoff]
 		self.test_targets = np.split(self.test_targets, num_test_batches)
+		print self.test_targets
 		self.test_sequence_lengths = sequence_lengths[test_start_end_index[0]:test_start_end_index[1]][:test_cutoff]
 		self.test_sequence_lengths = np.split(self.test_sequence_lengths, num_test_batches)
 

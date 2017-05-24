@@ -8,39 +8,41 @@ import csv
 import numpy as np
 from multiprocessing import Process, Lock
 import vocabmapping
+import string
+from nltk.tokenize import TweetTokenizer
 
-path = "data/twitter/dataset.csv"
+path = "data/oohlala/dataset.csv"
 
 def run(max_seq_length, max_vocab_size):
     if not os.path.exists("data/"):
         os.makedirs("data/")
-    if not os.path.exists("data/twitter/"):
-        os.makedirs("data/twitter/")
-    if not os.path.exists("data/twitter/csv"):
-        os.makedirs("data/twitter/csv")
-    if not os.path.exists("data/twitter/checkpoints/"):
-        os.makedirs("data/twitter/checkpoints")
+    if not os.path.exists("data/oohlala/"):
+        os.makedirs("data/oohlala/")
+    if not os.path.exists("data/oohlala/csv"):
+        os.makedirs("data/oohlala/csv")
+    if not os.path.exists("data/oohlala/checkpoints/"):
+        os.makedirs("data/oohlala/checkpoints")
     if not os.path.exists(path):
-        print "Data not found, please add to data/twitter/dataset.csv"
+        print "Data not found, please add to data/oohlala/dataset.csv"
         return
     else:
-        csvsplit(open(path), row_limit=30000, output_path="data/twitter/csv")
-    if os.path.exists("data/twitter/vocab.txt"):
+        csvsplit(open(path), row_limit=30000, output_path="data/oohlala/csv")
+    if os.path.exists("data/oohlala/vocab.txt"):
         print "vocab mapping found..."
     else:
         print "no vocab mapping found, running preprocessor..."
         createVocab(path, max_vocab_size)
-    if not os.path.exists("data/twitter/processed"):
-        os.makedirs("data/twitter/processed/")
+    if not os.path.exists("data/oohlala/processed"):
+        os.makedirs("data/oohlala/processed/")
         print "No processed data file found, running preprocessor..."
-    if not os.path.exists("data/twitter/processed/data0.npy"):
+    if not os.path.exists("data/oohlala/processed/data0.npy"):
         print "Procesing data..."
         import vocabmapping
         vocab = vocabmapping.VocabMapping()
         dirCount = 0
         processes = []
         lock = Lock()
-        csv_paths = "data/twitter/csv/"
+        csv_paths = "data/oohlala/csv/"
         dirs = [f for f in os.listdir(csv_paths) if (os.path.isfile(os.path.join(csv_paths, f)) and f.endswith('.csv'))]
         for d in dirs:
             d = os.path.join(csv_paths, d)
@@ -60,7 +62,7 @@ A lock was used to ensure while writing to std.out bad things don't happen.
 '''
 def createProcessedDataFile(vocab, f, pid, max_seq_length, lock):
     count = 0
-    data = np.array([i for i in range(max_seq_length + 3)])
+    data = np.array([i for i in range(max_seq_length + 4)])
     with open(f, 'rb') as csvfile:
         csvreader = csv.reader(csvfile, delimiter=',')
         print "Grabbing sequence lengths from: {0}".format(f)
@@ -72,7 +74,9 @@ def createProcessedDataFile(vocab, f, pid, max_seq_length, lock):
                 lock.acquire()
                 print "Processing: " + f + " the " + str(count) + "th file... on process: " + str(pid)
                 lock.release()
-            tokens = tokenize(row[3].lower())
+            printable = set(string.printable)
+            text = filter(lambda x: x in printable, row[0])
+            tokens = tokenize(text.lower())
             numTokens = len(tokens)
             indices = [vocab.getIndex(j) for j in tokens]
             #pad sequence to max length
@@ -80,12 +84,14 @@ def createProcessedDataFile(vocab, f, pid, max_seq_length, lock):
                 indices = indices + [vocab.getIndex("<PAD>") for i in range(max_seq_length - len(indices))]
             else:
                 indices = indices[0:max_seq_length]
-            if row[1] is "1":
-                indices.extend([0,1])
+            if row[2] == "Neutral":
+                indices.extend([0,1,0])
+            elif row[2] == "Positive":
+                indices.extend([1,0,0])
             else:
-                indices.extend([1,0])
+                indices.extend([0,0,1])
             indices.append(min(numTokens, max_seq_length))
-            assert len(indices) == max_seq_length + 3, str(len(indices))
+            assert len(indices) == max_seq_length + 4, str(len(indices))
             data = np.vstack((data, indices))
             indices = []
     #remove first placeholder value
@@ -141,7 +147,8 @@ This function tokenizes sentences
 '''
 def tokenize(text):
     text = text.decode('utf-8')
-    return nltk.word_tokenize(text)
+    tknzr = TweetTokenizer()
+    return tknzr.tokenize(text)
 
 '''
 taken from: http://stackoverflow.com/questions/3368969/find-string-between-two-substrings
@@ -160,7 +167,7 @@ Saves processed data numpy array
 '''
 def saveData(npArray, index):
     name = "data{0}.npy".format(str(index))
-    outfile = os.path.join("data/twitter/processed/", name)
+    outfile = os.path.join("data/oohlala/processed/", name)
     print "numpy array is: {0}x{1}".format(len(npArray), len(npArray[0]))
     np.save(outfile, npArray)
 
@@ -174,7 +181,9 @@ def createVocab(path, max_vocab_size):
         csvreader = csv.reader(csvfile, delimiter=',')
         print "Grabbing sequence lengths from: {0}".format(path)
         for row in csvreader:
-            tokens = tokenize(row[3].lower())
+            printable = set(string.printable)
+            text = filter(lambda x: x in printable, row[0])
+            tokens = tokenize(text.lower())
             for t in tokens:
                 if t not in dic:
                     dic[t] = 1
@@ -192,5 +201,5 @@ def createVocab(path, max_vocab_size):
     d["<UNK>"] = counter
     counter +=1
     d["<PAD>"] = counter
-    with open('data/twitter/vocab.txt', 'wb') as handle:
+    with open('data/oohlala/vocab.txt', 'wb') as handle:
         pickle.dump(d, handle)

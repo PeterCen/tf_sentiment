@@ -56,6 +56,7 @@ def main():
 			input_feed[model.dropout_keep_prob_lstm_input.name] = model.dropout
 			input_feed[model.dropout_keep_prob_lstm_output.name] = model.dropout
 			output_feed = [model.y]
+			print output_feed
 			outputs = sess.run(output_feed, input_feed)
 			score = np.argmax(outputs[0])
 			probability = outputs[0].max(axis=1)[0]
@@ -128,6 +129,7 @@ def load_model(session, vocab_size):
 											learning_rate = hyper_params["learning_rate"],
 											lr_decay = hyper_params["lr_decay_factor"],
 											batch_size = 1,
+											num_classes = 2,
 											forward_only=True)
 	ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_dir)
 	if ckpt and gfile.Exists(ckpt.model_checkpoint_path+".index"):
