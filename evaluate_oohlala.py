@@ -60,10 +60,8 @@ def main():
 			outputs = sess.run(output_feed, input_feed)
 			print outputs
 			score = np.argmax(outputs[0])
-			score1 = np.argmax(outputs[1])
-			score2 = np.argmax(outputs[2])
 			probability = outputs[0].max(axis=1)[0]
-			print "Value of sentiment: {0} {1} {2} with probability: {3}".format(score, score1, score2, probability)
+			print "Value of sentiment: {0} with probability: {3}".format(score, probability)
 			output_row = [text, score, probability]
 			output_row.extend(tokenize(text))
 			output_data.append(output_row)
