@@ -61,7 +61,7 @@ def main():
 			print outputs
 			score = np.argmax(outputs[0])
 			probability = outputs[0].max(axis=1)[0]
-			print "Value of sentiment: {0} with probability: {3}".format(score, probability)
+			print "Value of sentiment: {0} with probability: {1}".format(score, probability)
 			output_row = [text, score, probability]
 			output_row.extend(tokenize(text))
 			output_data.append(output_row)
